@@ -1,7 +1,10 @@
 # SciWiki Dataset Construction
 
-A curated collection of 2k high-quality Wikipedia articles aligned with ScienceDirect topics. This repository houses scripts to fetch URLs, filter articles using the ORES API, and extract content in multiple formats—laying the foundation for generating scientific articles with LLMs.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Dataset on Hugging Face](https://img.shields.io/badge/Dataset-HuggingFace-blue)](https://huggingface.co/datasets/danilotpnta/SciWiki)
+<!-- [![Build Status](https://img.shields.io/github/actions/workflow/status/yourusername/yourrepo/ci.yml)](https://github.com/yourusername/yourrepo/actions) -->
 
+A curated collection of 2k high-quality Wikipedia articles aligned with ScienceDirect topics. This repository houses scripts to fetch URLs, filter articles using the ORES API, and extract content in multiple formats—laying the foundation for generating scientific articles with LLMs.
 
 ## Project Overview
 
