@@ -8,8 +8,8 @@ import wikipediaapi
 import wikipedia
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from config.constants import topics_all_json, data_dir
-from .utils import load_json, dump_json, format_args
+from config.constants import topics_json, data_dir
+from src.utils import load_json, dump_json, format_args
 
 
 class WikiURLFetcher:
@@ -174,6 +174,8 @@ def process_topics(topics, fetcher, args):
 
 
 def main(args):
+
+    return
     topics = load_json(args.topics_json)
     fetcher = WikiURLFetcher()
 
@@ -188,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--topics_json",
         type=str,
-        default=topics_all_json,
+        default=topics_json,
         help="Path to the JSON file containing topics.",
     )
     parser.add_argument(
@@ -211,5 +213,9 @@ if __name__ == "__main__":
 
     if args.max_workers is not None:
         args.max_workers = min(args.max_workers, os.cpu_count())
-
+    """
+    python src/modules/get_wikipedia_urls.py \
+        --topics_json input/topics.json \
+        --output_dir data/urls/
+    """
     main(args)

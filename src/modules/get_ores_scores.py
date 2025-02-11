@@ -12,7 +12,7 @@ from requests.packages.urllib3.util.retry import Retry
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from config.constants import topics_urls_json, data_dir
-from .utils import load_json, dump_json, format_args
+from src.utils import load_json, dump_json, format_args
 import argparse
 
 logger = logging.getLogger(__name__)
@@ -171,6 +171,8 @@ def batch_process_topics(topic_urls_dict, results_path, max_workers=8, batch_siz
 
 
 def main(args):
+    print("All good at ores")
+    return
     print_warning(args.topics_urls_json)
 
     # Define paths for intermediate and final results

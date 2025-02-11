@@ -2,7 +2,8 @@ import os
 from pathlib import Path
 
 # Get the project root directory (2 levels up from constants.py)
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).parent.parent
+print("Project root:", project_root)
 data_dir = os.path.join(project_root, "data")
 
 # Input paths

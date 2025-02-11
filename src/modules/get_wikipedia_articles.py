@@ -12,7 +12,7 @@ from flair.data import Sentence
 from flair.nn import Classifier
 
 from config.constants import topics_urls_json
-from .utils import (
+from src.utils import (
     load_json,
     write_html,
     dump_json,
@@ -284,7 +284,8 @@ def process_url(url: str, username: str = "Knowledge Curation Project"):
 
 
 def main(args):
-
+    print("All good at articles")
+    return
     urls_topics_dict = load_topics()
     fileManager = FilesHandler(args.output_dir, args.files_types_to_save)
 

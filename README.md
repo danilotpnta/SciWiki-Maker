@@ -43,29 +43,70 @@ Ensure you have [Conda](https://docs.conda.io/en/latest/) installed or other vir
 
 1. **Create and Activate the Environment**
 
-   ```sh
-   conda create -n myenv python=3.11
-   conda activate myenv
-   ```
+```sh
+conda create -n sciwiki python=3.11 -y
+conda activate sciwiki
+```
 
 2. **Install Required Packages**
 
-   ```sh
-   pip install -r requirements.txt
-   ```
+Make sure you have the correct torch version installed for your system. For CUDA 11.1, use the following command:
+
+```sh
+pip install torch==2.5.1+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
+```
+
+Then, install the remaining dependencies:
+
+```sh
+pip install -r requirements.txt
+```
 
 
 ## Dataset Construction and Usage
 
-To construct the SciWiki dataset, run the following command:
+### Running Submodules Separately
+If you want to run the submodules separately, you can use the following commands. It is recommended to set up your pythonpath to the root of the project.
+
+If you are using **Zsh**, you can use the following commands:
+```bash
+echo 'export PYTHONPATH="$HOME/SciWiki-Maker"' >> ~/.zshrc
+source ~/.zshrc
+```
+#### 1. URL Fetcher
+
+```bash
+python src/modules/get_wikipedia_urls.py \
+    --topics_json input/topics.json \
+    --output_dir data/urls/
+```
+```bash
+python -m src.modules.get_wikipedia_urls --topics_json data/topics.json --output_dir data/urls
+python -m src.modules.get_ores_scores --topics_urls_json urls/topics_urls_exact_matches.json --output_dir data/ores
+python -m src.modules.get_wikipedia_urls --topics_json urls/topics_urls_exact_matches.json --output_dir data/ores
+```
+
+### Running the Dataset Builder
+
+For running the dataset builder as a script you can use the following command:
+
 
 ```bash
 python src/build_dataset.py \
-  --topics_file data/topics_all.json \
-  --output_dir data \
-  --max_workers 1 \
-  --file_types txt json
+    --topics_file input/topics.json \
+    --output_dir data \
+    --max_workers 1 \
+    --file_types txt json
 ```
+
+```bash
+python -m src.build_dataset \
+    --topics_file input/topics.json \
+    --output_dir data \
+    --max_workers 1 \
+    --file_types txt json
+```
+
 
 ### Command Line Arguments
 

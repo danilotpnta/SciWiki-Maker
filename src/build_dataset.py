@@ -1,9 +1,16 @@
+import sys
 import os
+
+# # Determine the project root directory (one level up from the src folder)
+# project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# if project_root not in sys.path:
+#     sys.path.insert(0, project_root)
+
 import argparse
 import logging
 from typing import List
 
-from modules import get_wikipedia_urls, get_ores_scores, get_wikipedia_articles
+from src.modules import get_wikipedia_urls, get_ores_scores, get_wikipedia_articles
 
 logging.basicConfig(
     level=logging.INFO,
@@ -94,6 +101,12 @@ class DatasetBuilder:
 
 
 def main():
+    builder = DatasetBuilder(args.output_dir)
+    builder.build(args.topics_file, args.max_workers, args.file_types)
+
+
+if __name__ == "__main__":
+
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_dir = os.path.join(project_root, "data")
 
@@ -123,12 +136,8 @@ def main():
         choices=["html", "txt", "json", "md"],
         help="Types of files to save for each article",
     )
-
+    """
+    python /home/toapantabarahonad/SciWiki-Maker/src/build_dataset.py --topics_file  data/topics.json
+    """
     args = parser.parse_args()
-
-    builder = DatasetBuilder(args.output_dir)
-    builder.build(args.topics_file, args.max_workers, args.file_types)
-
-
-if __name__ == "__main__":
     main()
