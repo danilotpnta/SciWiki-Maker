@@ -15,7 +15,7 @@ The SciWiki dataset pipeline performs the following tasks:
 
 
 
-## Data Directory Structure
+<!-- ## Data Directory Structure
 
 After running the dataset construction process, your `data/` folder will be organized as follows:
 
@@ -26,11 +26,9 @@ data/
 ├── ores/
 │   └── topics_ores_scores.json
 └── articles/
-    ├── html/
     ├── txt/
-    ├── json/
-    └── md/
-```
+    └── json/
+``` -->
 
 
 ## Installation
@@ -65,25 +63,13 @@ pip install -r requirements.txt
 
 ## Dataset Construction and Usage
 
-### Running Submodules Separately
-If you want to run the submodules separately, you can use the following commands. It is recommended to set up your pythonpath to the root of the project.
+### Pre-requisites
+It is recommended to set up your pythonpath to the root of the project directory. This will allow you to run the scripts from any location.
 
 If you are using **Zsh**, you can use the following commands:
 ```bash
 echo 'export PYTHONPATH="$HOME/SciWiki-Maker"' >> ~/.zshrc
 source ~/.zshrc
-```
-#### 1. URL Fetcher
-
-```bash
-python src/modules/get_wikipedia_urls.py \
-    --topics_json input/topics.json \
-    --output_dir data/urls/
-```
-```bash
-python -m src.modules.get_wikipedia_urls --topics_json data/topics.json --output_dir data/urls
-python -m src.modules.get_ores_scores --topics_urls_json urls/topics_urls_exact_matches.json --output_dir data/ores
-python -m src.modules.get_wikipedia_urls --topics_json urls/topics_urls_exact_matches.json --output_dir data/ores
 ```
 
 ### Running the Dataset Builder
@@ -99,13 +85,34 @@ python src/build_dataset.py \
     --file_types txt json
 ```
 
+
+### Running the Individual Modules
+#### 1. URL Fetcher
+
 ```bash
-python -m src.build_dataset \
+python src/modules/get_wikipedia_urls.py \
+    --topics_json input/topics.json \
+    --output_dir data/urls/
+```
+
+#### 2. ORES Score Fetcher
+
+```bash     
+python src/modules/get_ores_scores.py \
+    --urls_file data/urls/topics_urls.json \
+    --output_dir data/ores/
+```
+
+#### 3. Article Extractor
+
+```bash
+python src/modules/extract_articles.py \
     --topics_file input/topics.json \
-    --output_dir data \
+    --ores_scores_file data/ores/topics_ores_scores.json \
+    --output_dir data/articles/ \
     --max_workers 1 \
     --file_types txt json
-```
+``` 
 
 
 ### Command Line Arguments
