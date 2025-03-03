@@ -2,7 +2,7 @@ import os
 import time
 import argparse
 import pandas as pd
-from llms import AzureOpenAIModel, BedrockModel, HuggingFaceModel
+from .llms import AzureOpenAIModel, BedrockModel, HuggingFaceModel
 
 
 def _init_llms(args):

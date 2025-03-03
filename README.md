@@ -151,10 +151,9 @@ python src/modules/extract_articles.py \
 
 - **Inspiration and Acknowledgments:**  
   - This dataset was inspired by the **FreshWiki Dataset**, which focuses on the most-edited Wikipedia pages between February 2022 and September 2023.
-  - We acknowledge the FreshWiki authors for their contributions and for providing a data construction pipeline that informed several of our processing scripts.
 
   - For more details on the original dataset and pipeline, please refer to:
     > Yijia Shao et al. (2024). "Assisting in Writing Wikipedia-like Articles From Scratch with Large Language Models." [NAACL HLT 2024](https://arxiv.org/abs/2402.14207).
 
 - **Additional Attribution:**  
-  - Please ensure proper attribution to Wikipedia, ScienceDirect, and any other contributors when using or referencing this dataset.
+  - Please ensure proper attribution to Wikipedia, and any other contributors when using or referencing this dataset.
