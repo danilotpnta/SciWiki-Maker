@@ -284,8 +284,6 @@ def process_url(url: str, username: str = "Knowledge Curation Project"):
 
 
 def main(args):
-    print("All good at articles")
-    return
     urls_topics_dict = load_topics()
     fileManager = FilesHandler(args.output_dir, args.files_types_to_save)
 

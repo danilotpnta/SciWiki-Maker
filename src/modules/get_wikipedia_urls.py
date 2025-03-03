@@ -174,8 +174,6 @@ def process_topics(topics, fetcher, args):
 
 
 def main(args):
-
-    return
     topics = load_json(args.topics_json)
     fetcher = WikiURLFetcher()
 

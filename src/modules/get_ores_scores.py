@@ -171,8 +171,6 @@ def batch_process_topics(topic_urls_dict, results_path, max_workers=8, batch_siz
 
 
 def main(args):
-    print("All good at ores")
-    return
     print_warning(args.topics_urls_json)
 
     # Define paths for intermediate and final results
