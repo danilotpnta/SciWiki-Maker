@@ -1,11 +1,4 @@
-import sys
 import os
-
-# # Determine the project root directory (one level up from the src folder)
-# project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-# if project_root not in sys.path:
-#     sys.path.insert(0, project_root)
-
 import argparse
 import logging
 from typing import List
