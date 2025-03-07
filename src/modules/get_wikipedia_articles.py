@@ -23,21 +23,6 @@ from src.utils import (
 from typing import List
 
 
-def get_references_(sentence, reference_dict):
-    """
-    Given a sentence, extract all reference index and find links from dictionary,
-    then remove reference brackets from original sentences
-
-    @param sentence, sentence to process
-    @param reference_dict, dictionary of references
-    @return cleaned sentence, reference_list pair
-    """
-    refs = re.findall(r"\[\d+\]", sentence)
-    sentence = re.sub(r"\[\d+\]", "", sentence).strip().replace("\n", "")
-    return sentence, [
-        reference_dict[ref.replace("[", "").replace("]", "")] for ref in refs
-    ]
-
 def get_references(sentence, reference_dict):
     """
     Given a sentence, extract all reference index and find links from dictionary,
@@ -49,7 +34,7 @@ def get_references(sentence, reference_dict):
     """
     refs = re.findall(r"\[\d+\]", sentence)
     sentence = re.sub(r"\[\d+\]", "", sentence).strip().replace("\n", "")
-    
+
     reference_list = []
     for ref in refs:
         ref_key = ref.replace("[", "").replace("]", "")
@@ -57,7 +42,7 @@ def get_references(sentence, reference_dict):
             reference_list.append(reference_dict[ref_key])
         else:
             print(f"Warning: Reference {ref_key} not found in reference dictionary")
-    
+
     return sentence, reference_list
 
 
@@ -81,84 +66,33 @@ def get_section_paragraphs(heading):
         node = node.find_next()
         if not node:
             break
-        
-        # As soon as we see ANY heading, we stop
+
         if node.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             break
-        
+
         if node.name == "p":
             content.append(node)
 
     return content
 
-def get_content_until_next_header_(element):
-    """Helper function to get all content until next header"""
-    content = []
-    current = element.next_sibling
-
-    while current:
-        if current.name == "p":
-            content.append(current)
-
-        elif current.name == "div":
-            headers = current.find_all(
-                ["h1", "h2", "h3", "h4", "h5", "h6"], recursive=True
-            )
-            if headers:
-                break
-
-        current = current.next_sibling
-    return content
 
 def extract_data(html, reference_dict):
     data = {}
-
-    # Find the *actual* heading tags, not their parent <div>
     headings = html.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
 
     for heading in headings:
-        section_title = heading.get_text(strip=True).replace("[edit]", "").replace("\xa0", " ")
-
+        section_title = (
+            heading.get_text(strip=True).replace("[edit]", "").replace("\xa0", " ")
+        )
         paragraphs = get_section_paragraphs(heading)
 
-        # Convert the list of <p> tags into your text array
         section_data = []
         for p in paragraphs:
             raw_text = p.get_text()
-            # Example: split into sentences on ". "
             for sentence in raw_text.replace("[", " [").split(". "):
                 clean_sentence, refs = get_references(sentence, reference_dict)
                 if clean_sentence:
                     section_data.append({"sentence": clean_sentence, "refs": refs})
-
-        data[section_title] = section_data
-
-    return data
-
-def extract_data_(html, reference_dict):
-    """
-    Extract section data from wiki url.
-
-    @param url: wiki url
-    @reference_dict, reference dict from extract_references()
-    @return a dictionary, key is section / subsection name, value is a list of {"sentence": ..., "refs": []}
-    """
-
-    data = {}
-
-    for header in html.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
-        header_container = header.parent
-        section_title = header.text.replace("[edit]", "").strip().replace("\xa0", " ")
-        section_data = []
-
-        paragraphs = get_content_until_next_header(header_container)
-
-        for p in paragraphs:
-            for sentence in p.text.replace("[", " [").split(". "):
-                if sentence:
-                    sentence, refs = get_references(sentence, reference_dict)
-                    if sentence:
-                        section_data.append({"sentence": sentence, "refs": refs})
 
         data[section_title] = section_data
 
@@ -198,30 +132,6 @@ def extract_references(html):
     return references
 
 
-def getSections_(page, structured_data):
-    """
-    Recursively extract each section title and plain text.
-
-    @param page, page variable from wikipediaapi (e.g. wiki_api.page("page name"))
-    @return a list of nested json for each section and corresponding subsections
-    {
-        "section_title": ...,
-        "section_text": ...,
-        "subsections": [
-            {...},
-            {...}
-        ]
-    }
-    """
-    return [
-        {
-            "section_title": i.title,
-            "section_content": structured_data[i.title],
-            "subsections": getSections_(i, structured_data),
-        }
-        for i in page.sections
-    ]
-
 def getSections(page, structured_data):
     """
     Recursively extract each section title and plain text.
@@ -230,25 +140,31 @@ def getSections(page, structured_data):
     for i in page.sections:
         section_title = i.title
         section_content = []
-        
+
         if section_title in structured_data:
             section_content = structured_data[section_title]
         else:
-            matching_keys = [key for key in structured_data.keys() 
-                            if section_title in key or key.startswith(section_title)]
+            matching_keys = [
+                key
+                for key in structured_data.keys()
+                if section_title in key or key.startswith(section_title)
+            ]
             if matching_keys:
                 matched_key = matching_keys[0]
                 section_content = structured_data[matched_key]
-                print(f"Title mismatch: WikiAPI '{section_title}' matched to BS4 '{matched_key}'")
-        
+                print(
+                    f"Title mismatch: WikiAPI '{section_title}' matched to BS4 '{matched_key}'"
+                )
+
         section_data = {
             "section_title": section_title,
             "section_content": section_content,
-            "subsections": getSections(i, structured_data)
+            "subsections": getSections(i, structured_data),
         }
         result.append(section_data)
-    
+
     return result
+
 
 def fetch_data_wikipedia(username, url):
     """
@@ -348,32 +264,6 @@ class FilesHandler:
             os.makedirs(os.path.join(self.output_dir, file_type), exist_ok=True)
             print(f"Saving files to: ", os.path.join(self.output_dir, file_type))
 
-    def save_(self, domain, topic, html_page, txt, result):
-
-        topic = topic.replace(" ", "_")
-
-        # 1. Saves defaults: html, txt, json
-        domain_path = os.path.join(self.output_dir, "html", domain)
-        os.mkdir(domain_path, exist_ok=True)
-        write_html(
-            str(html_page.prettify()),
-            os.path.join(domain_path, topic + ".html"),
-        )
-
-        domain_path = os.path.join(self.output_dir, "txt", domain)
-        os.mkdir(domain_path, exist_ok=True)
-        write_str(txt, os.path.join(domain_path, topic + "_new.txt"))
-
-        domain_path = os.path.join(self.output_dir, "json", domain)
-        os.mkdir(domain_path, exist_ok=True)
-        dump_json(result, os.path.join(domain_path, topic + ".json"))
-
-        # 2. Saves extra files
-        if "md" in self.files_types_to_save:
-            md_path = os.path.join(self.output_dir, "md", topic + ".md")
-            write_str(txt, md_path)
-
-
     def save(self, domain, topic, html_page, txt, result):
         topic = topic.replace(" ", "_")
 
@@ -385,9 +275,8 @@ class FilesHandler:
 
         for file_type, (data, extension, save_func) in file_types.items():
             domain_path = os.path.join(self.output_dir, file_type, domain)
-            os.makedirs(domain_path, exist_ok=True)  
+            os.makedirs(domain_path, exist_ok=True)
             save_func(data, os.path.join(domain_path, f"{topic}.{extension}"))
-
 
         if "md" in self.files_types_to_save:
             md_path = os.path.join(self.output_dir, "md", domain)
@@ -409,7 +298,7 @@ def process_url(url: str, username: str = "Knowledge Curation Project"):
 
 def main(args):
     urls_topics_dict = load_topics()
-    
+
     fileManager = FilesHandler(args.output_dir, args.files_types_to_save)
 
     if args.batch_path:
@@ -422,7 +311,6 @@ def main(args):
                 url = row["url"]
                 domain = row["domain"]
                 topic = row["concept"]
-                # topic = urls_topics_dict.get(url, url.split("/")[-1])
                 html_page, txt, result = process_url(url)
                 fileManager.save(domain, topic, html_page, txt, result)
 
