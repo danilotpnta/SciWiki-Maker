@@ -23,7 +23,7 @@ from src.utils import (
 from typing import List
 
 
-def get_references(sentence, reference_dict):
+def get_references_(sentence, reference_dict):
     """
     Given a sentence, extract all reference index and find links from dictionary,
     then remove reference brackets from original sentences
@@ -38,6 +38,28 @@ def get_references(sentence, reference_dict):
         reference_dict[ref.replace("[", "").replace("]", "")] for ref in refs
     ]
 
+def get_references(sentence, reference_dict):
+    """
+    Given a sentence, extract all reference index and find links from dictionary,
+    then remove reference brackets from original sentences
+
+    @param sentence, sentence to process
+    @param reference_dict, dictionary of references
+    @return cleaned sentence, reference_list pair
+    """
+    refs = re.findall(r"\[\d+\]", sentence)
+    sentence = re.sub(r"\[\d+\]", "", sentence).strip().replace("\n", "")
+    
+    reference_list = []
+    for ref in refs:
+        ref_key = ref.replace("[", "").replace("]", "")
+        if ref_key in reference_dict:
+            reference_list.append(reference_dict[ref_key])
+        else:
+            print(f"Warning: Reference {ref_key} not found in reference dictionary")
+    
+    return sentence, reference_list
+
 
 def load_topics():
     """Load topics from json file"""
@@ -47,7 +69,29 @@ def load_topics():
     return urls_topics_dict
 
 
-def get_content_until_next_header(element):
+def get_section_paragraphs(heading):
+    """
+    Walk forward from `heading` collecting <p> paragraphs
+    until we see the very next heading of ANY level (h1..h6).
+    """
+    content = []
+    node = heading
+
+    while True:
+        node = node.find_next()
+        if not node:
+            break
+        
+        # As soon as we see ANY heading, we stop
+        if node.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
+            break
+        
+        if node.name == "p":
+            content.append(node)
+
+    return content
+
+def get_content_until_next_header_(element):
     """Helper function to get all content until next header"""
     content = []
     current = element.next_sibling
@@ -66,8 +110,32 @@ def get_content_until_next_header(element):
         current = current.next_sibling
     return content
 
-
 def extract_data(html, reference_dict):
+    data = {}
+
+    # Find the *actual* heading tags, not their parent <div>
+    headings = html.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+
+    for heading in headings:
+        section_title = heading.get_text(strip=True).replace("[edit]", "").replace("\xa0", " ")
+
+        paragraphs = get_section_paragraphs(heading)
+
+        # Convert the list of <p> tags into your text array
+        section_data = []
+        for p in paragraphs:
+            raw_text = p.get_text()
+            # Example: split into sentences on ". "
+            for sentence in raw_text.replace("[", " [").split(". "):
+                clean_sentence, refs = get_references(sentence, reference_dict)
+                if clean_sentence:
+                    section_data.append({"sentence": clean_sentence, "refs": refs})
+
+        data[section_title] = section_data
+
+    return data
+
+def extract_data_(html, reference_dict):
     """
     Extract section data from wiki url.
 
@@ -130,7 +198,7 @@ def extract_references(html):
     return references
 
 
-def getSections(page, structured_data):
+def getSections_(page, structured_data):
     """
     Recursively extract each section title and plain text.
 
@@ -149,11 +217,38 @@ def getSections(page, structured_data):
         {
             "section_title": i.title,
             "section_content": structured_data[i.title],
-            "subsections": getSections(i, structured_data),
+            "subsections": getSections_(i, structured_data),
         }
         for i in page.sections
     ]
 
+def getSections(page, structured_data):
+    """
+    Recursively extract each section title and plain text.
+    """
+    result = []
+    for i in page.sections:
+        section_title = i.title
+        section_content = []
+        
+        if section_title in structured_data:
+            section_content = structured_data[section_title]
+        else:
+            matching_keys = [key for key in structured_data.keys() 
+                            if section_title in key or key.startswith(section_title)]
+            if matching_keys:
+                matched_key = matching_keys[0]
+                section_content = structured_data[matched_key]
+                print(f"Title mismatch: WikiAPI '{section_title}' matched to BS4 '{matched_key}'")
+        
+        section_data = {
+            "section_title": section_title,
+            "section_content": section_content,
+            "subsections": getSections(i, structured_data)
+        }
+        result.append(section_data)
+    
+    return result
 
 def fetch_data_wikipedia(username, url):
     """
@@ -267,7 +362,7 @@ class FilesHandler:
 
         domain_path = os.path.join(self.output_dir, "txt", domain)
         os.mkdir(domain_path, exist_ok=True)
-        write_str(txt, os.path.join(domain_path, topic + ".txt"))
+        write_str(txt, os.path.join(domain_path, topic + "_new.txt"))
 
         domain_path = os.path.join(self.output_dir, "json", domain)
         os.mkdir(domain_path, exist_ok=True)
@@ -313,7 +408,7 @@ def process_url(url: str, username: str = "Knowledge Curation Project"):
 
 
 def main(args):
-    # urls_topics_dict = load_topics() # deprecated use 'concept' col from input csv to get the `topic`
+    urls_topics_dict = load_topics()
     
     fileManager = FilesHandler(args.output_dir, args.files_types_to_save)
 
@@ -334,10 +429,12 @@ def main(args):
             except Exception as e:
                 print(e)
                 print(f'Error occurs when processing {row["url"]}')
-    # else:
-    #     topic = urls_topics_dict.get(args.url, args.url.split("/")[-1])
-    #     html_page, txt, result = process_url(args.url)
-    #     fileManager.save(topic, html_page, txt, result)
+    else:
+        topic = urls_topics_dict.get(args.url, args.url.split("/")[-1])
+        if args.domain is None:
+            args.domain = input("Enter domain: ")
+        html_page, txt, result = process_url(args.url)
+        fileManager.save(args.domain, topic, html_page, txt, result)
 
 
 if __name__ == "__main__":
@@ -357,6 +454,12 @@ if __name__ == "__main__":
         # default="https://en.wikipedia.org/wiki/Wave",
         default="https://en.wikipedia.org/wiki/Zillennials",
         help="The URL of the Wikipedia page to parse (default: https://en.wikipedia.org/wiki/Python_(programming_language))",
+    )
+    parser.add_argument(
+        "--domain",
+        default=None,
+        type=str,
+        help="The domain of the topic (default: empty)",
     )
     parser.add_argument(
         "-o",
