@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from flair.data import Sentence
 from flair.nn import Classifier
 
-from config.constants import topics_urls_json
+from config.paths import topics_urls_json
 from src.utils import (
     load_json,
     write_html,
@@ -253,22 +253,51 @@ class FilesHandler:
             os.makedirs(os.path.join(self.output_dir, file_type), exist_ok=True)
             print(f"Saving files to: ", os.path.join(self.output_dir, file_type))
 
-    def save(self, topic, html_page, txt, result):
+    def save_(self, domain, topic, html_page, txt, result):
 
         topic = topic.replace(" ", "_")
 
         # 1. Saves defaults: html, txt, json
+        domain_path = os.path.join(self.output_dir, "html", domain)
+        os.mkdir(domain_path, exist_ok=True)
         write_html(
             str(html_page.prettify()),
-            os.path.join(self.output_dir, "html", topic + ".html"),
+            os.path.join(domain_path, topic + ".html"),
         )
-        write_str(txt, os.path.join(self.output_dir, "txt", topic + ".txt"))
-        dump_json(result, os.path.join(self.output_dir, "json", topic + ".json"))
+
+        domain_path = os.path.join(self.output_dir, "txt", domain)
+        os.mkdir(domain_path, exist_ok=True)
+        write_str(txt, os.path.join(domain_path, topic + ".txt"))
+
+        domain_path = os.path.join(self.output_dir, "json", domain)
+        os.mkdir(domain_path, exist_ok=True)
+        dump_json(result, os.path.join(domain_path, topic + ".json"))
 
         # 2. Saves extra files
         if "md" in self.files_types_to_save:
             md_path = os.path.join(self.output_dir, "md", topic + ".md")
             write_str(txt, md_path)
+
+
+    def save(self, domain, topic, html_page, txt, result):
+        topic = topic.replace(" ", "_")
+
+        file_types = {
+            "html": (str(html_page.prettify()), "html", write_html),
+            "txt": (txt, "txt", write_str),
+            "json": (result, "json", dump_json),
+        }
+
+        for file_type, (data, extension, save_func) in file_types.items():
+            domain_path = os.path.join(self.output_dir, file_type, domain)
+            os.makedirs(domain_path, exist_ok=True)  
+            save_func(data, os.path.join(domain_path, f"{topic}.{extension}"))
+
+
+        if "md" in self.files_types_to_save:
+            md_path = os.path.join(self.output_dir, "md", domain)
+            os.makedirs(md_path, exist_ok=True)
+            write_str(txt, os.path.join(md_path, f"{topic}.md"))
 
 
 def process_url(url: str, username: str = "Knowledge Curation Project"):
@@ -284,27 +313,31 @@ def process_url(url: str, username: str = "Knowledge Curation Project"):
 
 
 def main(args):
-    urls_topics_dict = load_topics()
+    # urls_topics_dict = load_topics() # deprecated use 'concept' col from input csv to get the `topic`
+    
     fileManager = FilesHandler(args.output_dir, args.files_types_to_save)
 
     if args.batch_path:
         df = pd.read_csv(args.batch_path)
+        assert "concept" in df.columns, "Input CSV should contain 'concept' column"
         for _, row in tqdm(
             df.iterrows(), total=len(df), desc="Fetching Wikipedia pages"
         ):
             try:
                 url = row["url"]
-                topic = urls_topics_dict.get(url, url.split("/")[-1])
+                domain = row["domain"]
+                topic = row["concept"]
+                # topic = urls_topics_dict.get(url, url.split("/")[-1])
                 html_page, txt, result = process_url(url)
-                fileManager.save(topic, html_page, txt, result)
+                fileManager.save(domain, topic, html_page, txt, result)
 
             except Exception as e:
                 print(e)
                 print(f'Error occurs when processing {row["url"]}')
-    else:
-        topic = urls_topics_dict.get(args.url, args.url.split("/")[-1])
-        html_page, txt, result = process_url(args.url)
-        fileManager.save(topic, html_page, txt, result)
+    # else:
+    #     topic = urls_topics_dict.get(args.url, args.url.split("/")[-1])
+    #     html_page, txt, result = process_url(args.url)
+    #     fileManager.save(topic, html_page, txt, result)
 
 
 if __name__ == "__main__":
